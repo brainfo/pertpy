@@ -653,6 +653,58 @@ class Milo:
         nhoods_X = csr_matrix(nhoods_X / adata.obsm["nhoods"].toarray().sum(0))
         sample_adata.varm[expr_id] = nhoods_X.T
 
+    def annotate_adata(
+        self,
+        mdata: MuData,
+        anno_col: str | None="nhood_da",
+        feature_key: str | None = "rna",
+        spatialfdr: float | None = 0.05,
+        logfc: float | None = 2,
+    ):
+        """Assigns a categorical label to cells, based on whether they belongs to nhood enriched or deficient by DA testing results.
+
+        Args:
+            mdata: MuData object
+            anno_col: Column in adata.obs to hold the annotation labels
+            feature_key: If input data is MuData, specify key to cell-level AnnData object.
+
+        Returns:
+            None. Adds in place:
+            - `milo_mdata['rna'].obs["nhood_da"]`: assigning a label to each cell
+        """
+        try:
+            sample_adata = mdata["milo"]
+        except KeyError:
+            logger.error(
+                "milo_mdata should be a MuData object with two slots: feature_key and 'milo' - please run milopy.count_nhoods(adata) first"
+            )
+            raise
+        adata = mdata[feature_key]
+
+        # check if mdata["milo"].var["SpatialFDR"] and mdata["milo"].var["logFC"] are present
+        if "SpatialFDR" not in mdata["milo"].var.columns or "logFC" not in mdata["milo"].var.columns:
+            raise ValueError(
+                "mdata['milo'].var['SpatialFDR'] and mdata['milo'].var['logFC'] are not present in the data. Please run milo.da_nhoods() first."
+            )
+        
+        # Check column exists
+        if anno_col not in adata.obs.columns:
+            adata.obs[anno_col] = "non"
+
+        enriched_nhoods = mdata["milo"].var_names[(mdata["milo"].var["SpatialFDR"] < spatialfdr) & (mdata["milo"].var["logFC"] > logfc)]
+        deficient_nhoods = mdata["milo"].var_names[(mdata["milo"].var["SpatialFDR"] < spatialfdr) & (mdata["milo"].var["logFC"] < -logfc)]
+        enriched_obs = adata.obsm['nhoods'][:, enriched_nhoods.astype(int).tolist()].sum(axis=1).A1 > 0
+        deficient_obs = adata.obsm['nhoods'][:, deficient_nhoods.astype(int).tolist()].sum(axis=1).A1 > 0
+
+        adata.obs.loc[enriched_obs, anno_col] = "enriched"
+        adata.obs.loc[deficient_obs, anno_col] = "deficient"
+        mixed_obs = enriched_obs & deficient_obs
+        if len(mixed_obs) > 0:
+            logger.warning(
+                "Some neighbourhoods are both enriched and deficient. Annotate to mixed."
+            )
+            adata.obs[mixed_obs, anno_col] = "mixed"
+
     def _setup_rpy2(
         self,
     ):
