@@ -11,32 +11,7 @@
 
 ![fig1](https://github.com/user-attachments/assets/d2e32d69-b767-4be3-a938-77a9dce45d3f)
 
-## Documentation
-
-Please read the [documentation](https://pertpy.readthedocs.io/en/latest).
-
-## Installation
-
-We recommend installing and running pertpy on a recent version of Linux (e.g. Ubuntu 24.04 LTS).
-No particular hardware beyond a standard laptop is required.
-
-You can install _pertpy_ in less than a minute via [pip] from [PyPI]:
-
-```console
-pip install pertpy
-```
-
-if you want to use tascCODA, please install pertpy as follows:
-
-```console
-pip install 'pertpy[tcoda]'
-```
-
-If you want to use the differential gene expression interface, please install pertpy by running:
-
-```console
-pip install 'pertpy[de]'
-```
+## This is a fork for personal usage
 
 ## Citation
 
