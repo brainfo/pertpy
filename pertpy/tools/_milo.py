@@ -1051,3 +1051,56 @@ class Milo:
             return plt.gcf()
         plt.show()
         return None
+    
+    @_doc_params(common_plot_args=doc_common_plot_args)
+    def plot_nhood_counts_violin_by_cond(
+        self,
+        mdata: MuData,
+        test_var: str,
+        *,
+        subset_nhoods: list[str] = None,
+        log_counts: bool = False,
+        palette: str | Sequence[str] | dict[str, str] | None = None,
+        return_fig: bool = False,
+    ) -> Figure | None:
+        """Plot boxplot of cell numbers vs condition of interest.
+
+        Args:
+            mdata: MuData object storing cell level and nhood level information
+            test_var: Name of column in adata.obs storing condition of interest (y-axis for boxplot)
+            subset_nhoods: List of obs_names for neighbourhoods to include in plot. If None, plot all nhoods.
+            log_counts: Whether to plot log1p of cell counts.
+            {common_plot_args}
+
+        Returns:
+            If `return_fig` is `True`, returns the figure, otherwise `None`.
+        """
+        try:
+            nhood_adata = mdata["milo"].T.copy()
+        except KeyError:
+            raise RuntimeError(
+                "mdata should be a MuData object with two slots: feature_key and 'milo'. Run milopy.count_nhoods(mdata) first"
+            ) from None
+
+        if subset_nhoods is None:
+            subset_nhoods = nhood_adata.obs_names
+
+        pl_df = pd.DataFrame(nhood_adata[subset_nhoods].X.toarray(), columns=nhood_adata.var_names).melt(
+            var_name=nhood_adata.uns["sample_col"], value_name="n_cells"
+        )
+        pl_df = pd.merge(pl_df, nhood_adata.var)
+        pl_df["log_n_cells"] = np.log1p(pl_df["n_cells"])
+        if not log_counts:
+            sns.violinplot(data=pl_df, x=test_var, y="n_cells", palette=palette, hue=test_var)
+            plt.ylabel("# cells")
+        else:
+            sns.violinplot(data=pl_df, x=test_var, y="log_n_cells", palette=palette, hue=test_var)
+            plt.ylabel("log(# cells + 1)")
+
+        plt.xticks(rotation=90)
+        plt.xlabel(test_var)
+
+        if return_fig:
+            return plt.gcf()
+        plt.show()
+        return None
