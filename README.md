@@ -9,8 +9,6 @@
 
 # pertpy
 
-![fig1](https://github.com/user-attachments/assets/d2e32d69-b767-4be3-a938-77a9dce45d3f)
-
 ## This is a fork for personal usage
 
 ## Citation
