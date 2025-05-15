@@ -409,8 +409,9 @@ class Milo:
 
         # Save outputs
         res.index = sample_adata.var_names[keep_nhoods]  # type: ignore
-        if any(col in sample_adata.var.columns for col in res.columns):
-            sample_adata.var = sample_adata.var.drop(res.columns, axis=1)
+        cols_to_drop = [col for col in res.columns if col in sample_adata.var.columns]
+        if cols_to_drop:
+            sample_adata.var = sample_adata.var.drop(cols_to_drop, axis=1)
         sample_adata.var = pd.concat([sample_adata.var, res], axis=1)
 
         # Run Graph spatial FDR correction
@@ -775,6 +776,7 @@ class Milo:
         self,
         mdata: MuData,
         *,
+        color: str = "logFC",
         alpha: float = 0.1,
         min_logFC: float = 0,
         min_size: int = 10,
@@ -825,9 +827,9 @@ class Milo:
                     please run milopy.utils.build_nhood_graph(adata)'
             )
 
-        nhood_adata.obs["graph_color"] = nhood_adata.obs["logFC"]
+        nhood_adata.obs["graph_color"] = nhood_adata.obs[color]
         nhood_adata.obs.loc[nhood_adata.obs["SpatialFDR"] > alpha, "graph_color"] = np.nan
-        nhood_adata.obs["abs_logFC"] = abs(nhood_adata.obs["logFC"])
+        nhood_adata.obs["abs_logFC"] = abs(nhood_adata.obs[color])
         nhood_adata.obs.loc[nhood_adata.obs["abs_logFC"] < min_logFC, "graph_color"] = np.nan
 
         # Plotting order - extreme logFC on top
